@@ -25,15 +25,24 @@ Four principles in one file:
 
 ## Install
 
-**New project (no existing CLAUDE.md):**
+**Option A: CLAUDE.md (recommended)**
+
+New project:
 ```bash
 curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpthy-skills/main/CLAUDE.md
 ```
 
-**Existing project (append to your CLAUDE.md):**
+Existing project (append):
 ```bash
 echo "" >> CLAUDE.md
 curl https://raw.githubusercontent.com/forrestchang/andrej-karpthy-skills/main/CLAUDE.md >> CLAUDE.md
+```
+
+**Option B: Skills directory**
+
+```bash
+mkdir -p .claude/skills
+curl -o .claude/skills/karpathy-guidelines.md https://raw.githubusercontent.com/forrestchang/andrej-karpthy-skills/main/.claude/skills/karpathy-guidelines.md
 ```
 
 ## Key Insight
