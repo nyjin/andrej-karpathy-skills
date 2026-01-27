@@ -23,9 +23,18 @@ Four principles in one file:
 | **Surgical Changes** | Orthogonal edits, touching code you shouldn't |
 | **Goal-Driven Execution** | Leverage through tests-first, verifiable success criteria |
 
-## Usage
+## Install
 
-Copy `CLAUDE.md` to your project root. Claude Code reads it automatically.
+**New project (no existing CLAUDE.md):**
+```bash
+curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpthy-skills/main/CLAUDE.md
+```
+
+**Existing project (append to your CLAUDE.md):**
+```bash
+echo "" >> CLAUDE.md
+curl https://raw.githubusercontent.com/forrestchang/andrej-karpthy-skills/main/CLAUDE.md >> CLAUDE.md
+```
 
 ## Key Insight
 
