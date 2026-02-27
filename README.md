@@ -1,6 +1,8 @@
-# Karpathy-Inspired Claude Code Guidelines
+# Karpathy-Inspired Claude Code Guidelines (Enhanced)
 
-A single `CLAUDE.md` file to improve Claude Code behavior, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
+An enhanced `CLAUDE.md` to improve Claude Code behavior, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
+
+Based on [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills), which nailed the core principles. This fork extends it with a few additions for my workflow.
 
 ## The Problems
 
@@ -12,135 +14,117 @@ From Andrej's post:
 
 > "They still sometimes change/remove comments and code they don't sufficiently understand as side effects, even if orthogonal to the task."
 
-## The Solution
+> "It's so interesting to watch an agent relentlessly work at something. They never get tired, they never get demoralized, they just keep going..."
 
-Four principles in one file that directly address these issues:
+## The Seven Principles
 
-| Principle | Addresses |
-|-----------|-----------|
-| **Think Before Coding** | Wrong assumptions, hidden confusion, missing tradeoffs |
-| **Simplicity First** | Overcomplication, bloated abstractions |
-| **Surgical Changes** | Orthogonal edits, touching code you shouldn't |
-| **Goal-Driven Execution** | Leverage through tests-first, verifiable success criteria |
+| Principle | Karpathy Problem |
+| --- | --- |
+| **Think Before Coding** | Wrong assumptions, hidden confusion, missing tradeoffs, inconsistencies |
+| **Be Direct, Not Sycophantic** | Too agreeable, don't push back |
+| **Simplicity First** | Overcomplication, bloated abstractions, 1000 lines → 100 |
+| **Surgical Changes** | Side-effect edits, touching code you shouldn't |
+| **Goal-Driven Execution** | Leverage through tests-first, declarative goals |
+| **Know When to Stop** | Blind persistence, spinning without progress |
+| **Pre-Submit Review** | Unstated assumptions, missing tests |
 
-## The Four Principles in Detail
+Plus a **Task Sizing Guide** that scales effort to complexity (small/medium/large).
 
 ### 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-LLMs often pick an interpretation silently and run with it. This principle forces explicit reasoning:
+Three sub-concerns, each with pattern-based triggers:
 
-- **State assumptions explicitly** — If uncertain, ask rather than guess
-- **Present multiple interpretations** — Don't pick silently when ambiguity exists
-- **Push back when warranted** — If a simpler approach exists, say so
-- **Stop when confused** — Name what's unclear and ask for clarification
+- **Assumptions** — If you're deciding something the user didn't specify, ask first.
+- **Confusion management** — If the codebase contradicts the request, or code and comments disagree, stop and flag it.
+- **Tradeoff format** — "Option A optimizes for [X] at the cost of [Y]. Option B does the reverse. Which matters more here?"
 
-### 2. Simplicity First
+### 2. Be Direct, Not Sycophantic
+
+**Honest feedback is more valuable than agreement.**
+
+- Push back on flawed approaches before complying.
+- Give real assessments, not reassurance.
+- State your concern once, then respect the user's decision.
+
+### 3. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
 
-Combat the tendency toward overengineering:
+No unrequested features, no single-use abstractions, no passthrough wrappers. Includes a concrete list of common bloat patterns: factory classes for single implementations, config objects with one field, abstraction layers "for future extensibility," and try/catch around code that can't throw.
 
-- No features beyond what was asked
-- No abstractions for single-use code
-- No "flexibility" or "configurability" that wasn't requested
-- No error handling for impossible scenarios
-- If 200 lines could be 50, rewrite it
-
-**The test:** Would a senior engineer say this is overcomplicated? If yes, simplify.
-
-### 3. Surgical Changes
+### 4. Surgical Changes
 
 **Touch only what you must. Clean up only your own mess.**
 
-When editing existing code:
+Don't improve, refactor, reformat, or rename anything outside the task. Match existing style. Report unrelated issues at the end — don't fix them silently.
 
-- Don't "improve" adjacent code, comments, or formatting
-- Don't refactor things that aren't broken
-- Match existing style, even if you'd do it differently
-- If you notice unrelated dead code, mention it — don't delete it
-
-When your changes create orphans:
-
-- Remove imports/variables/functions that YOUR changes made unused
-- Don't remove pre-existing dead code unless asked
-
-**The test:** Every changed line should trace directly to the user's request.
-
-### 4. Goal-Driven Execution
+### 5. Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**
 
-Transform imperative tasks into verifiable goals:
+Transform vague tasks into test-first, verifiable goals with step-by-step plans. Strong criteria → loop independently. Weak criteria → clarify first.
 
-| Instead of... | Transform to... |
-|--------------|-----------------|
-| "Add validation" | "Write tests for invalid inputs, then make them pass" |
-| "Fix the bug" | "Write a test that reproduces it, then make it pass" |
-| "Refactor X" | "Ensure tests pass before and after" |
+### 6. Know When to Stop
 
-For multi-step tasks, state a brief plan:
+**Persistence is strength. Blind persistence is waste.**
 
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
+After 3 failed approaches, pause and escalate with a structured format showing what was tried, why it failed, and a suggested path forward.
 
-Strong success criteria let the LLM loop independently. Weak criteria ("make it work") require constant clarification.
+### 7. Pre-Submit Review
+
+Two checks before presenting work: assumptions stated, tests exist (or explained why not).
+
+## Design Decisions
+
+### Pattern-Based Triggers
+
+LLMs don't reliably recognize their own uncertainty. Instead of "if uncertain, ask," this version uses externally checkable conditions like "if you're deciding something the user didn't specify" or "if the request has gaps or contradictions."
+
+### Task Sizing Guide
+
+Scales guideline rigor to task complexity using compound criteria (file count + concern count + line count). Small tasks skip the ceremony; large tasks require a full plan.
+
+### Minimal Checklist
+
+The pre-submit review has only 2 items. LLMs apply rules during generation, not via post-hoc checklists. Items that duplicate earlier sections were removed to save tokens.
 
 ## Install
 
-**Option A: Claude Code Plugin (recommended)**
-
-From within Claude Code, first add the marketplace:
-```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
-```
-
-Then install the plugin:
-```
-/plugin install andrej-karpathy-skills@karpathy-skills
-```
-
-This installs the guidelines as a Claude Code plugin, making the skill available across all your projects.
-
-**Option B: CLAUDE.md (per-project)**
+**Option A: CLAUDE.md (recommended)**
 
 New project:
+
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+curl -o CLAUDE.md https://raw.githubusercontent.com/nyjin/andrej-karpathy-skills/main/CLAUDE.md
 ```
 
 Existing project (append):
+
 ```bash
 echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
+curl https://raw.githubusercontent.com/nyjin/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
 
-## Key Insight
+**Option B: Skills directory**
 
-From Andrej:
-
-> "LLMs are exceptionally good at looping until they meet specific goals... Don't tell it what to do, give it success criteria and watch it go."
-
-The "Goal-Driven Execution" principle captures this: transform imperative instructions into declarative goals with verification loops.
+```bash
+mkdir -p skills/karpathy-guidelines
+curl -o skills/karpathy-guidelines/SKILL.md https://raw.githubusercontent.com/nyjin/andrej-karpathy-skills/main/skills/karpathy-guidelines/SKILL.md
+```
 
 ## How to Know It's Working
 
-These guidelines are working if you see:
-
-- **Fewer unnecessary changes in diffs** — Only requested changes appear
-- **Fewer rewrites due to overcomplication** — Code is simple the first time
-- **Clarifying questions come before implementation** — Not after mistakes
-- **Clean, minimal PRs** — No drive-by refactoring or "improvements"
+- Diffs contain fewer unnecessary changes
+- Fewer rewrites due to overcomplication
+- Clarifying questions come before implementation, not after mistakes
+- Pushback and tradeoff analysis before silent compliance
+- Failed approaches are reported early, not after 20 minutes of spinning
 
 ## Customization
 
-These guidelines are designed to be merged with project-specific instructions. Add them to your existing `CLAUDE.md` or create a new one.
-
-For project-specific rules, add sections like:
+These guidelines are designed to be merged with project-specific instructions:
 
 ```markdown
 ## Project-Specific Guidelines
@@ -150,11 +134,19 @@ For project-specific rules, add sections like:
 - Follow the existing error handling patterns in `src/utils/errors.ts`
 ```
 
-## Tradeoff Note
+## Changelog
 
-These guidelines bias toward **caution over speed**. For trivial tasks (simple typo fixes, obvious one-liners), use judgment — not every change needs the full rigor.
+Changes from the upstream [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills):
 
-The goal is reducing costly mistakes on non-trivial work, not slowing down simple tasks.
+- Added §2 "Be Direct, Not Sycophantic" — honest feedback over agreement
+- Added §6 "Know When to Stop" — 3-attempt threshold with escalation format
+- Added §7 "Pre-Submit Review" — 2-item self-check
+- Added Task Sizing Guide — small/medium/large with compound criteria
+- Added confusion management subsection to §1 — codebase contradictions, code/comment disagreements
+- Added tradeoff response template to §1
+- Added bloat pattern list to §3 — factory, config, wrapper, dead try/catch
+- Added scope escalation rule — pause if scope grows mid-task
+- Changed triggers from self-awareness ("if uncertain") to pattern-based ("if user didn't specify")
 
 ## License
 

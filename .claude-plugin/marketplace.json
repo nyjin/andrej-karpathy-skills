@@ -2,26 +2,27 @@
   "name": "karpathy-skills",
   "id": "karpathy-skills",
   "owner": {
-    "name": "forrestchang"
+    "name": "nyjin"
   },
   "metadata": {
-    "description": "Behavioral guidelines to reduce common LLM coding mistakes, derived from Andrej Karpathy's observations",
-    "version": "1.0.0"
+    "description": "Enhanced behavioral guidelines to reduce common LLM coding mistakes. 7 principles covering assumptions, sycophancy, simplicity, surgical changes, goal-driven execution, persistence control, and self-review.",
+    "version": "2.0.0"
   },
   "plugins": [
     {
       "name": "andrej-karpathy-skills",
       "source": "./",
-      "description": "Behavioral guidelines to reduce common LLM coding mistakes: Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution",
-      "version": "1.0.0",
+      "description": "Think Before Coding, Be Direct Not Sycophantic, Simplicity First, Surgical Changes, Goal-Driven Execution, Know When to Stop, Pre-Submit Review",
+      "version": "2.0.0",
       "author": {
-        "name": "forrestchang"
+        "name": "nyjin"
       },
       "keywords": [
         "guidelines",
         "best-practices",
         "coding",
-        "karpathy"
+        "karpathy",
+        "claude-code"
       ],
       "category": "workflow"
     }
