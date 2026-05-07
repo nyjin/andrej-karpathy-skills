@@ -1,8 +1,14 @@
 # Karpathy-Inspired Claude Code Guidelines (Enhanced)
 
+English | [한글](README.ko.md)
+
 An enhanced `CLAUDE.md` to improve Claude Code behavior, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
 
-Based on [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills), which nailed the core principles. This fork extends it with a few additions for my workflow.
+This README walks through three layers:
+
+1. **The problems** Karpathy identified
+2. **How [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills)** addressed them with 4 principles
+3. **How this fork improves further** with pattern-based triggers, two new principles, and aggressive pruning
 
 ## The Problems
 
@@ -10,85 +16,112 @@ From Andrej's post:
 
 > "The models make wrong assumptions on your behalf and just run along with them without checking. They don't manage their confusion, don't seek clarifications, don't surface inconsistencies, don't present tradeoffs, don't push back when they should."
 
+> "They are still a little too sycophantic."
+
 > "They really like to overcomplicate code and APIs, bloat abstractions, don't clean up dead code... implement a bloated construction over 1000 lines when 100 would do."
 
 > "They still sometimes change/remove comments and code they don't sufficiently understand as side effects, even if orthogonal to the task."
 
 > "It's so interesting to watch an agent relentlessly work at something. They never get tired, they never get demoralized, they just keep going..."
 
-## The Seven Principles
+Five distinct failure modes: **silent assumptions**, **sycophancy**, **bloat**, **side-effect edits**, and **blind tenacity**.
 
-| Principle | Karpathy Problem |
+## How forrestchang's CLAUDE.md Addresses These
+
+Upstream organizes the response into **4 principles**, each tied to one or more of Karpathy's problems:
+
+| Upstream Principle | Karpathy Problem(s) Addressed |
 | --- | --- |
-| **Think Before Coding** | Wrong assumptions, hidden confusion, missing tradeoffs, inconsistencies |
-| **Be Direct, Not Sycophantic** | Too agreeable, don't push back |
-| **Simplicity First** | Overcomplication, bloated abstractions, 1000 lines → 100 |
-| **Surgical Changes** | Side-effect edits, touching code you shouldn't |
-| **Goal-Driven Execution** | Leverage through tests-first, declarative goals |
-| **Know When to Stop** | Blind persistence, spinning without progress |
-| **Pre-Submit Review** | Unstated assumptions, missing tests |
+| **§1 Think Before Coding** | Wrong assumptions, hidden confusion, missing tradeoffs, unstated push-back |
+| **§2 Simplicity First** | Overcomplication, bloated abstractions, 1000-line constructions |
+| **§3 Surgical Changes** | Side-effect edits to adjacent code, dead-code creation |
+| **§4 Goal-Driven Execution** | Leverages Karpathy's "loop on success criteria" insight (test-first, declarative goals) |
 
-Plus a **Task Sizing Guide** that scales effort to complexity (small/medium/large).
+The upstream version uses **self-awareness triggers** (e.g., *"if uncertain, ask"*, *"if multiple interpretations exist, present them"*) and adds a closing self-check (*"Would a senior engineer say this is overcomplicated?"*, *"If you write 200 lines and it could be 50, rewrite it"*).
+
+What upstream **doesn't** address directly:
+
+- **Sycophancy** — collapsed into a single line *"Push back when warranted"* inside §1, easily missed
+- **Inconsistency between codebase and request** — not called out
+- **Inconsistency between code and its own comments** — not called out
+- **Blind tenacity** — Karpathy's tenacity observation (*"they just keep going..."*) has no corresponding rule; the model has no instruction to ever stop and escalate
+
+## How This Fork Improves Further
+
+Five focused changes on top of upstream, plus a `Foundations` block that anchors everything below.
+
+| Change | Why |
+| --- | --- |
+| **Foundations section at the top** | Two non-negotiables surfaced before the numbered principles: *never decide silently* and *use judgment on trivialities, loop on strong criteria*. Anchors all five principles. |
+| **Pattern-based triggers** | *"If uncertain, ask"* depends on self-awareness LLMs don't reliably have. Replaced with externally checkable conditions: *did the user specify this?*, *is the change risky (architecture / dependencies / schema / broad scope)?*, *do the inputs contradict?* |
+| **Named tradeoff axes** | Vague *"surface tradeoffs"* → four explicit axes: **scope, time, quality, reversibility**. Reduces "what counts as a tradeoff" ambiguity. |
+| **Push-back rule made explicit and bounded** | Upstream's single line *"Push back when warranted"* → *"User's approach has a flaw → push back **once**, then follow"*. Same intent, but bounded so it doesn't degrade into nagging. Directly targets the sycophancy problem. |
+| **Inconsistency rule added to §1** | *"Codebase contradicts request, or code contradicts its own comments → ask before acting."* Not present in upstream. |
+| **Comment preservation rule added to §3** | *"Don't edit, rephrase, or remove existing comments unless the task requires it."* Direct response to Karpathy's *"they still sometimes change/remove comments..."* observation. Not present in upstream. |
+| **§5 Know When to Stop (new)** | Karpathy's tenacity observation cuts both ways. 3-attempt threshold + structured escalation format converts blind retry into a checkpoint. |
+| **Self-check ceremony pruned** | Removed *"would a senior engineer say overcomplicated?"*, *"if 200 lines could be 50, rewrite"*, and similar. LLMs apply rules during generation, not via post-hoc introspection — those lines were costing tokens without changing behavior. |
+
+## The Five Principles
+
+### Foundations
+
+- **Core:** Never decide silently — ask before acting, or surface assumptions in your response.
+- **Autonomy:** Use judgment on trivialities (note the call in your report); loop independently when success criteria are strong.
 
 ### 1. Think Before Coding
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+Don't assume. Don't hide confusion. Surface to the user when:
 
-Three sub-concerns, each with pattern-based triggers:
+- **Risky** (architecture, dependencies, schema, broad scope) → ask first; otherwise "Assumed X — change if not"
+- **Tradeoff axis hit** (scope, time, quality, reversibility) → name them, let the user choose
+- **User's approach has a flaw** → push back once, then follow
+- **Inconsistency** (codebase vs. request, code vs. comments) → ask before acting
 
-- **Assumptions** — If you're deciding something the user didn't specify, ask first.
-- **Confusion management** — If the codebase contradicts the request, or code and comments disagree, stop and flag it.
-- **Tradeoff format** — "Option A optimizes for [X] at the cost of [Y]. Option B does the reverse. Which matters more here?"
+### 2. Simplicity First
 
-### 2. Be Direct, Not Sycophantic
+Minimum code that solves the problem. Nothing speculative.
 
-**Honest feedback is more valuable than agreement.**
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
 
-- Push back on flawed approaches before complying.
-- Give real assessments, not reassurance.
-- State your concern once, then respect the user's decision.
+### 3. Surgical Changes
 
-### 3. Simplicity First
+Touch only what you must — every changed line must trace to the user's request; otherwise revert. Match existing style even if you'd do it differently. Don't refactor, reformat, rename, or rewrite comments outside the task. Remove only the imports/variables/functions *your* changes orphaned. Report unrelated issues (pre-existing dead code, etc.) at the end of your response — don't fix them silently.
 
-**Minimum code that solves the problem. Nothing speculative.**
+### 4. Goal-Driven Execution
 
-No unrequested features, no single-use abstractions, no passthrough wrappers. Includes a concrete list of common bloat patterns: factory classes for single implementations, config objects with one field, abstraction layers "for future extensibility," and try/catch around code that can't throw.
+Define success criteria. Loop until verified. Transform vague tasks into verifiable goals — usually test-first:
 
-### 4. Surgical Changes
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
 
-**Touch only what you must. Clean up only your own mess.**
+For multi-step or multi-decision requests, propose a plan with per-step verification before executing.
 
-Don't improve, refactor, reformat, or rename anything outside the task. Match existing style. Report unrelated issues at the end — don't fix them silently.
+### 5. Know When to Stop
 
-### 5. Goal-Driven Execution
+Persistence is strength. Blind persistence is waste.
 
-**Define success criteria. Loop until verified.**
+- After 3 failed approaches (or silent retries with minor variations), pause. Summarize failures. Ask for direction.
+- If a fix cascades into new failures, step back and reconsider — don't keep patching.
 
-Transform vague tasks into test-first, verifiable goals with step-by-step plans. Strong criteria → loop independently. Weak criteria → clarify first.
-
-### 6. Know When to Stop
-
-**Persistence is strength. Blind persistence is waste.**
-
-After 3 failed approaches, pause and escalate with a structured format showing what was tried, why it failed, and a suggested path forward.
-
-### 7. Pre-Submit Review
-
-Two checks before presenting work: assumptions stated, tests exist (or explained why not).
+The escalation format makes this concrete: list each attempt, why it failed, and a best-guess path forward — then wait.
 
 ## Design Decisions
 
-### Pattern-Based Triggers
+### Pattern-based triggers over self-awareness
 
-LLMs don't reliably recognize their own uncertainty. Instead of "if uncertain, ask," this version uses externally checkable conditions like "if you're deciding something the user didn't specify" or "if the request has gaps or contradictions."
+LLMs don't reliably recognize their own uncertainty. *"If uncertain, ask"* tends to collapse into *"feel confident, proceed silently."* This version replaces self-introspection with **externally checkable conditions** — *did the user specify this?*, *does this touch architecture / schema / dependencies?*, *do the inputs contradict?* These are easier to apply consistently mid-generation.
 
-### Task Sizing Guide
+### Bounded push-back instead of standalone sycophancy rule
 
-Scales guideline rigor to task complexity using compound criteria (file count + concern count + line count). Small tasks skip the ceremony; large tasks require a full plan.
+Pushing back on a flawed approach is a special case of *"don't hide confusion"* — the flaw *is* the confusion to surface. Keeping it as a §1 sub-bullet (rather than a standalone principle) plus the *"once, then follow"* boundary prevents the rule from degrading into either silent compliance or repeated nagging.
 
-### Minimal Checklist
+### Why §5 exists
 
-The pre-submit review has only 2 items. LLMs apply rules during generation, not via post-hoc checklists. Items that duplicate earlier sections were removed to save tokens.
+Karpathy: *"They never get tired, they never get demoralized, they just keep going..."* That tenacity is real leverage, but it also produces 30 minutes of silent retries on a doomed approach. A 3-attempt threshold plus a structured escalation format converts that energy into a checkpoint instead of a slot machine.
 
 ## Install
 
@@ -136,17 +169,16 @@ These guidelines are designed to be merged with project-specific instructions:
 
 ## Changelog
 
-Changes from the upstream [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills):
+Changes from upstream [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills):
 
-- Added §2 "Be Direct, Not Sycophantic" — honest feedback over agreement
-- Added §6 "Know When to Stop" — 3-attempt threshold with escalation format
-- Added §7 "Pre-Submit Review" — 2-item self-check
-- Added Task Sizing Guide — small/medium/large with compound criteria
-- Added confusion management subsection to §1 — codebase contradictions, code/comment disagreements
-- Added tradeoff response template to §1
-- Added bloat pattern list to §3 — factory, config, wrapper, dead try/catch
-- Added scope escalation rule — pause if scope grows mid-task
-- Changed triggers from self-awareness ("if uncertain") to pattern-based ("if user didn't specify")
+- Added **Foundations** section — explicit Core + Autonomy rules above the principles
+- Added **§5 Know When to Stop** — 3-attempt threshold with escalation format
+- Added **inconsistency handling** to §1 — codebase vs. request, code vs. comments
+- Added **named tradeoff axes** — scope, time, quality, reversibility
+- Added **comment preservation rule** to §3 — don't edit, rephrase, or remove existing comments outside the task
+- Made **push-back rule explicit and bounded** in §1 — once, then follow
+- Switched **triggers from self-awareness to pattern-based** — externally checkable conditions
+- **Pruned** self-check ceremony (*"senior engineer overcomplicated?"*, *"200 lines → 50"*) — no measurable behavioral effect
 
 ## License
 
