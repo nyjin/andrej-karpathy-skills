@@ -1,12 +1,18 @@
 # Examples
 
-Real-world code examples demonstrating the seven principles. Each example shows what LLMs commonly do wrong and how to fix it.
+Real-world code examples demonstrating the five principles. Each example shows what LLMs commonly do wrong and how to fix it.
+
+The two **Foundations** rules — *never decide silently* and *use judgment on trivialities, loop on strong criteria* — are illustrated implicitly throughout: §1 examples show how to surface assumptions instead of deciding silently, §4 examples show what "strong success criteria" looks like in practice.
+
+> See [CLAUDE.md](CLAUDE.md) for the rules these examples illustrate, and [README.md](README.md) for the rationale.
 
 ---
 
 ## 1. Think Before Coding
 
-### Example 1: Hidden Assumptions
+§1 fires on four externally checkable conditions. The examples below cover each in turn.
+
+### Example 1 — Risky scope: Hidden Assumptions
 
 **User Request:** "Add a feature to export user data"
 
@@ -54,42 +60,7 @@ Would need more info for file-based exports.
 What's your preference?
 ```
 
-### Example 2: Codebase Contradicts Request
-
-**User Request:** "Change the user model to use UUID instead of auto-increment ID"
-
-**❌ What LLMs Do (Ignore Inconsistency)**
-
-```python
-# Silently changes User model, breaks 15 foreign key relationships
-class User(Base):
-    id = Column(UUID, primary_key=True, default=uuid4)
-    # ... proceeds without mentioning downstream impact
-```
-
-**✅ What Should Happen (Flag the Inconsistency)**
-
-```
-Before changing User.id to UUID, I want to flag a potential issue:
-
-The codebase currently uses integer foreign keys referencing User.id in:
-- Order.user_id (integer FK)
-- Comment.author_id (integer FK)
-- Session.user_id (integer FK)
-- 3 migration files assume integer IDs
-
-Changing to UUID requires updating all of these.
-
-Options:
-- Option A: Full migration — change User.id + all FKs + write data migration. 
-  Larger scope, but clean result.
-- Option B: Add a separate uuid column, keep integer id as PK internally. 
-  Minimal disruption, UUIDs exposed only in API.
-
-Which approach do you prefer? Or should we scope this differently?
-```
-
-### Example 3: Multiple Interpretations with Tradeoffs
+### Example 2 — Tradeoff axes: Multiple Interpretations
 
 **User Request:** "Make the search faster"
 
@@ -101,32 +72,28 @@ async def search(query: str) -> List[Result]:
     # ... 200 lines of optimization code
 ```
 
-**✅ What Should Happen (Present Tradeoffs)**
+**✅ What Should Happen (Name the axes, let the user choose)**
 
 ```
-"Make the search faster" could mean different things:
+"Make the search faster" hits multiple tradeoff axes — let me name them:
 
 Option A: Faster response time (add index + cache)
-  → Optimizes for latency at the cost of memory usage
-  → Estimated: 2 hours
+  → quality (latency) ↑ at the cost of scope (memory + cache infra)
+  → time: ~2 hours
 
 Option B: Handle more concurrent searches (async + connection pool)
-  → Optimizes for throughput at the cost of code complexity
-  → Estimated: 4 hours
+  → quality (throughput) ↑ at the cost of scope (code complexity)
+  → time: ~4 hours
 
 Option C: Faster perceived speed (progressive loading)
-  → Optimizes for UX at the cost of additional frontend work
-  → Estimated: 3 hours
+  → quality (UX) ↑ at the cost of scope (frontend work)
+  → time: ~3 hours
 
 Current search takes ~500ms for typical queries.
 Which matters most here?
 ```
 
----
-
-## 2. Be Direct, Not Sycophantic
-
-### Example 1: User's Approach Has a Flaw
+### Example 3 — Push back once: User's Approach Has a Flaw
 
 **User Request:** "Store user passwords in a JSON config file so admins can reset them easily"
 
@@ -149,25 +116,27 @@ def reset_password(username, new_password):
     save_json('config/users.json', config)
 ```
 
-**✅ What Should Happen (Push Back)**
+**✅ What Should Happen (Push back once, then follow)**
 
 ```
-I'd push back on storing passwords in a JSON config file. This creates 
-serious security issues:
+I'd push back on storing passwords in a JSON config file. Serious concerns:
 
 - Passwords stored in plaintext (visible to anyone with file access)
 - Config files often end up in version control
 - No audit trail for password changes
 
-For easy admin resets, I'd suggest:
-- Store bcrypt-hashed passwords in the database (standard approach)
+For easy admin resets without the security risk:
+- Store bcrypt-hashed passwords in the database
 - Add an admin endpoint: POST /admin/reset-password
-- This gives you the same ease of reset without the security risk
+- Same ease of reset, no plaintext exposure
 
-Should I implement the admin reset endpoint instead?
+Want me to implement the admin reset endpoint instead?
+(If you have a constraint I'm missing and JSON is required, say so and I'll proceed.)
 ```
 
-### Example 2: Giving Real Assessment
+If the user reaffirms the original request, follow it — the rule is *push back once*, not "argue indefinitely."
+
+### Example 4 — Push back once: Honest Assessment
 
 **User Request:** "I wrote this caching layer. Does it look good?"
 
@@ -204,20 +173,55 @@ A few concerns:
 1. No eviction policy — this will grow unbounded and eventually OOM.
    At minimum, add a max_size with LRU eviction.
 
-2. Not thread-safe — concurrent access will corrupt hits/misses 
+2. Not thread-safe — concurrent access will corrupt the hits/misses 
    counters and the cache dict itself.
 
 3. No TTL — stale data stays forever.
 
-If this is for a single-threaded script with bounded data, it's fine 
-as-is. If it's for a web server, these are real issues.
+If this is a single-threaded script with bounded data, it's fine as-is. 
+If it's for a web server, these are real issues.
 
 What's the use case? That determines which of these actually matter.
 ```
 
+### Example 5 — Inconsistency: Codebase Contradicts Request
+
+**User Request:** "Change the user model to use UUID instead of auto-increment ID"
+
+**❌ What LLMs Do (Ignore the Inconsistency)**
+
+```python
+# Silently changes User model, breaks 15 foreign key relationships
+class User(Base):
+    id = Column(UUID, primary_key=True, default=uuid4)
+    # ... proceeds without mentioning downstream impact
+```
+
+**✅ What Should Happen (Flag the Inconsistency)**
+
+```
+Before changing User.id to UUID, I want to flag a potential issue:
+
+The codebase currently uses integer foreign keys referencing User.id in:
+- Order.user_id (integer FK)
+- Comment.author_id (integer FK)
+- Session.user_id (integer FK)
+- 3 migration files assume integer IDs
+
+Changing to UUID requires updating all of these.
+
+Options:
+- Option A: Full migration — change User.id + all FKs + write data migration. 
+  Larger scope, but clean result.
+- Option B: Add a separate uuid column, keep integer id as PK internally. 
+  Minimal disruption, UUIDs exposed only in API.
+
+Which approach do you prefer? Or should we scope this differently?
+```
+
 ---
 
-## 3. Simplicity First
+## 2. Simplicity First
 
 ### Example 1: Over-abstraction
 
@@ -262,7 +266,7 @@ class DiscountCalculator:
         return min(discount, self.config.max_discount)
 ```
 
-**Bloat patterns present:** Factory-style abstraction for single implementation, Config object with one meaningful field, Abstraction layer "for future extensibility."
+**Bloat patterns present:** abstract base for a single implementation, config object with one meaningful field, abstraction layer "for future extensibility."
 
 **✅ What Should Happen (Simple)**
 
@@ -316,9 +320,11 @@ def log_query(func):
 
 ---
 
-## 4. Surgical Changes
+## 3. Surgical Changes
 
-### Example 1: Drive-by Refactoring
+§3 includes an explicit rule against rewriting comments outside the task. Example 1 shows both drive-by refactoring *and* drive-by comment editing — a single rule covers both.
+
+### Example 1: Drive-by Refactoring (and Comment Drift)
 
 **User Request:** "Fix the bug where empty emails crash the validator"
 
@@ -350,9 +356,9 @@ def log_query(func):
 +         raise ValueError("Username too short")
 ```
 
-**Problems:** Added username validation nobody asked for, "improved" email validation beyond the fix, changed comments, added docstring.
+**Problems:** Added username validation nobody asked for, "improved" email validation beyond the fix, **rewrote existing comments** (`# Check email format` → `# Validate email`), added a docstring.
 
-**✅ What Should Happen (Surgical)**
+**✅ What Should Happen (Surgical, Comments Preserved)**
 
 ```diff
   def validate_user(user_data):
@@ -368,7 +374,7 @@ def log_query(func):
           raise ValueError("Invalid email")
 ```
 
-Only the lines that fix empty email handling. Nothing else.
+Only the lines that fix empty email handling. Existing comments untouched.
 
 ### Example 2: Style Drift
 
@@ -399,11 +405,11 @@ Only the lines that fix empty email handling. Nothing else.
           with open(file_path, 'rb') as f:
 ```
 
-Matched: Single quotes, no type hints, existing structure preserved.
+Matched: single quotes, no type hints, existing structure preserved.
 
 ---
 
-## 5. Goal-Driven Execution
+## 4. Goal-Driven Execution
 
 ### Example 1: Vague vs. Verifiable
 
@@ -477,7 +483,7 @@ def sort_scores(scores):
 
 ---
 
-## 6. Know When to Stop
+## 5. Know When to Stop
 
 ### Example 1: Spinning vs. Problem-Solving
 
@@ -541,42 +547,18 @@ not in the disconnect handler.
 
 ---
 
-## 7. Pre-Submit Review
-
-### Example: Catching Your Own Mistakes
-
-**User Request:** "Add pagination to the /users endpoint"
-
-Before presenting the changes, the LLM should self-check:
-
-```
-Pre-submit review:
-✅ Assumptions stated: assumed offset-based pagination (not cursor-based), 
-   default page_size=20. Mentioned this in the plan.
-✅ Tests: Added test for page 1, page 2, empty page, and invalid page param.
-✅ Scope: Only touched users_controller.py and test_users.py. 
-   No changes to unrelated files.
-```
-
-**❌ What gets caught by this step:**
-
-- "I assumed cursor-based pagination but never told the user" → state it now
-- "I didn't write tests because it seemed simple" → add them or explain why not
-- "I also refactored the auth middleware while I was in there" → revert that
-
----
-
 ## Anti-Patterns Summary
 
-| Principle | Anti-Pattern | Fix |
-|-----------|-------------|-----|
-| Think Before Coding | Silently assumes format, fields, scope | List assumptions, ask for clarification |
-| Be Direct | "Looks great!" when there are issues | Give honest assessment with specifics |
-| Simplicity First | Strategy pattern for single calculation | One function until complexity is needed |
-| Surgical Changes | Reformats quotes, adds types while fixing bug | Only change lines for the reported issue |
-| Goal-Driven | "I'll review and improve the code" | "Write test for X → make it pass → verify" |
-| Know When to Stop | 5+ attempts at CSS without pausing | Summarize 3 failures, ask for direction |
-| Pre-Submit Review | Ship without checking own assumptions | Verify assumptions stated, tests exist |
+| Trigger / Principle | Anti-Pattern | Fix |
+|---|---|---|
+| §1 — Risky scope | Silently assumes format, fields, scope | List assumptions; *"Assumed X — change if not"* |
+| §1 — Tradeoff axes | Picks one optimization path silently | Name **scope / time / quality / reversibility**, let user choose |
+| §1 — Push back once | *"Looks great!"* when there are real issues | Honest assessment with specifics; state concern once, then follow |
+| §1 — Inconsistency | Proceeds though codebase contradicts the request | Stop, surface the conflict, ask first |
+| §2 Simplicity | Strategy pattern for a single calculation | One function until complexity is actually needed |
+| §3 Surgical | Reformats, renames, **rewrites comments** while fixing a bug | Only change lines for the reported issue; preserve existing comments |
+| §4 Goal-Driven | *"I'll review and improve the code"* | *"Write test for X → make it pass → verify no regression"* |
+| §5 Stop | 5+ silent retries with minor variations | Pause after 3, summarize failures, escalate with the format |
 
 ## Key Insight
 

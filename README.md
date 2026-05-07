@@ -61,6 +61,29 @@ Five focused changes on top of upstream, plus a `Foundations` block that anchors
 | **§5 Know When to Stop (new)** | Karpathy's tenacity observation cuts both ways. 3-attempt threshold + structured escalation format converts blind retry into a checkpoint. |
 | **Self-check ceremony pruned** | Removed *"would a senior engineer say overcomplicated?"*, *"if 200 lines could be 50, rewrite"*, and similar. LLMs apply rules during generation, not via post-hoc introspection — those lines were costing tokens without changing behavior. |
 
+> ⚠️ **Tradeoff: Token Cost** — These additions grow `CLAUDE.md` from **~590 tokens (±20)** (upstream, 2,357 chars / 358 words) to **~690 tokens (±20)** (this fork, 2,754 chars / 418 words) — about **+17%**. Absolute counts are estimates (4 chars/token + BPE word-ratio cross-check at ~1.3 tokens/word); the **+17% delta is stable across estimation methods**, so the relative cost is the reliable number. For exact figures, use `client.messages.count_tokens()` from the Anthropic SDK. Every conversation pays this in the system prompt, so the extra principles are only a net win if they prevent enough mistakes to justify the overhead.
+
+### Is the +17% Worth It? — A Neutral Assessment
+
+A frank judgment, since the question deserves one. **None of these are measured against upstream** — they are structural arguments about which Karpathy problems each rule is *most* likely to prevent. There is no benchmark comparing the two versions.
+
+**Likely worth their cost:**
+
+- **§5 Know When to Stop** — directly addresses Karpathy's tenacity observation. A single avoided 30-minute spinning loop pays back the +100 tokens many times over. Upstream has no equivalent rule.
+- **§3 comment preservation** — directly addresses the *"models change/remove comments they don't understand"* observation. Avoiding even one drive-by comment edit per session is plausibly net positive.
+- **§1 inconsistency rule** — *codebase contradicts the request* is a common failure mode upstream doesn't name explicitly. Catching it once prevents a class of silent breakage.
+
+**More speculative (plausible but unproven):**
+
+- **Foundations section** — partly redundant with §1. Acts as an anchor, but the same content exists below in expanded form.
+- **Named tradeoff axes** — *scope/time/quality/reversibility* is more specific than upstream's vague *"surface tradeoffs"*, but whether the explicitness actually changes model behavior is untested.
+- **Pattern-based triggers** — the theoretical argument (external conditions are more reliably applied than self-introspection) is sound but unmeasured.
+- **Bounded push-back** — *"once, then follow"* is a sensible boundary, but upstream's single line *"Push back when warranted"* may already cover the same ground in practice.
+
+**Honest summary:** if you frequently see the model burn time on doomed approaches or quietly mangle adjacent code, **§5 + comment preservation alone justify the +100 tokens** — those two rules carry the bulk of the practical value. The rest of the changes are *structurally sounder* than upstream but not demonstrably so. If you rarely encounter those failure modes, the upstream 4-principle version is likely sufficient and cheaper.
+
+The honest framing: **this fork is a hypothesis-driven refinement, not a measured improvement.**
+
 ## The Five Principles
 
 ### Foundations
