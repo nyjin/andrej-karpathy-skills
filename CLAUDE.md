@@ -13,7 +13,7 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 **Don't assume. Don't hide confusion. Surface to user when:**
 
 - Risky (architecture, dependencies, schema, broad scope) → **ask first**; else "Assumed X — change if not"
-- Tradeoffs along **scope, time, quality, or reversibility** → name them, let user choose
+- Tradeoffs across **scope, time, quality, or reversibility** → recommend the better option with reasoning; if genuinely close, lay out the call for the user
 - User's approach has a flaw → **push back once**, then follow
 - Inconsistency (codebase vs request, code vs comments) → **ask before acting**
 
