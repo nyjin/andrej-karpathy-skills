@@ -166,7 +166,11 @@ This works without the skill being registered/loaded — the wrapper hands a ful
 ## Cost & safety
 
 - Default `quant` run: ~10 tasks × 2 variants × 1 rep × ~$0.18 ≈ **$3.60** (opus, with cache).
-- Hard cap per run: `--max-budget-usd 0.30`.
+- **What that dollar figure means depends on auth mode:**
+  - With `ANTHROPIC_API_KEY` set → real spend, billed to your Anthropic API account.
+  - On Claude Code OAuth (default) → API-equivalent usage, consumed against your subscription's rate-limit quota. Not directly billed in $.
+  - `run-bench.sh` detects the mode and labels the pre-flight estimate accordingly.
+- Hard cap per run: `--max-budget-usd 0.30` (enforced in both modes — Claude Code stops the cell if equivalent cost exceeds the cap).
 - Side-effect protection: `--disallowedTools` blocks push/gh/curl/wget/rm -rf. Run from `/tmp` cwd.
 - Never run without user confirmation if estimated cost > $3 OR `n × tasks > 30`.
 

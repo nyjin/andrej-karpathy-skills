@@ -73,12 +73,25 @@ fi
 TASKS_COUNT=$(jq '.tasks | length' "${SKILL_DIR}/references/tasks.json" 2>/dev/null || echo 10)
 EST_COST=$(awk "BEGIN { printf \"%.2f\", ${TASKS_COUNT} * 2 * ${N} * 0.18 }")
 
+# Distinguish auth modes: API key users get billed directly; OAuth users
+# (Claude Code subscription) consume against their plan's rate-limit quota.
+# The same dollar figure is reported by `claude -p` either way, but its
+# meaning differs — wallet vs quota.
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  COST_LABEL="Estimated API spend"
+  COST_NOTE="(billed to your Anthropic API account)"
+else
+  COST_LABEL="Estimated API-equivalent usage"
+  COST_NOTE="(counts against your Claude Code subscription quota — not directly billed in \$)"
+fi
+
 cat >&2 <<EOF
 ============================================================
 claudemd-bench — pre-flight check
 ============================================================
 
-Estimated quant cost: ${TASKS_COUNT} tasks × 2 × ${N} × \$0.18/cell ≈ \$${EST_COST}
+${COST_LABEL}: ${TASKS_COUNT} tasks × 2 × ${N} × \$0.18/cell ≈ \$${EST_COST}
+${COST_NOTE}
 (orchestrator cap: \$8; aborts if exceeded)
 
 To make A/B test cells see ONLY the CLAUDE.md being benchmarked,
